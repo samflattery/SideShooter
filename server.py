@@ -1,25 +1,32 @@
 ############################
-# Code taken from Sockets Server Demo
-# by Rohan Varma
-# adapted by Kyle Chin
+# Code from Sockets demo for 15112
+# changes were made to improve UX
 ###########################
 
 import socket
 import threading
+import random
 from queue import Queue
 
-###
-## READ INSTRUCTIONS IN CAPITAL LETTER COMMENTS ##
-###
 
-HOST = ""  # IP ADDRESS IN QUOTES HERE ONLY IF PLAYING ON MULTIPLE COMPUTERS ##
-PORT = 10006  # CHANGED ME TO A RANDOM NUMBER 0-65535 WHEN YOU START A NEW GAME ##
+multiplayer = input("Do you wish to play on two different computers? [y/n]: ")
+while multiplayer.strip() != "y" and multiplayer.strip() != "n":
+    multiplayer = input("Please type either 'y' or 'n': ")
+
+PORT = random.randint(60000, 65535)
 BACKLOG = 4
+
+if multiplayer == "y":
+    HOST = socket.gethostbyname(socket.gethostname())
+    print("PORT: " + str(PORT) + "\nHOST: " + HOST)
+else:
+    HOST = ""
+    print("PORT: " + str(PORT))
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
 server.listen(BACKLOG)
-print("looking for connection")
+print("looking for connection...")
 
 
 def handleClient(client, serverChannel, cID, clientele):
@@ -42,7 +49,7 @@ def handleClient(client, serverChannel, cID, clientele):
 def serverThread(clientele, serverChannel):
     while True:
         msg = serverChannel.get(True, None)
-        print("msg recv: ", msg)
+        #print("msg recv: ", msg)
         msgList = msg.split(" ")
         senderID = msgList[0]
         instruction = msgList[1]
@@ -52,8 +59,8 @@ def serverThread(clientele, serverChannel):
                 if cID != senderID:
                     sendMsg = instruction + " " + senderID + " " + details + "\n"
                     clientele[cID].send(sendMsg.encode())
-                    print("> sent to %s:" % cID, sendMsg[:-1])
-        print()
+                    #print("> sent to %s:" % cID, sendMsg[:-1])
+        # print()
         serverChannel.task_done()
 
 
