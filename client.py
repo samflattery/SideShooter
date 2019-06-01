@@ -4,6 +4,7 @@
 import pygame
 import random
 import math
+import sys
 
 from Player import *
 from Blocks import *
@@ -14,34 +15,6 @@ from Weapons import *
 import socket
 import threading
 from queue import Queue
-
-###
-## READ INSTRUCTIONS IN CAPITAL LETTER COMMENTS ##
-###
-MULTIPLAYERPORT = "TYPE PORT NUMBER FROM SERVER.PY HERE IF PLAYING ON TWO COMPUTERS"  ## DO NOT PUT PORT NUMBER IN QUOTES ##
-
-
-def readFile(path):
-    with open(path, "rt") as f:
-        return f.read()
-
-
-serverFile = readFile("server.py")
-serverFileLines = serverFile.split("\n")
-portNumberLine = serverFileLines[15]
-commentStart = portNumberLine.index("#")
-portNumber = int(portNumberLine[7:commentStart].strip())
-
-HOST = ""  ## IP ADDRESS IN QUOTES HERE ONLY IF PLAYING ON MULTIPLE COMPUTERS ##
-if HOST != "":
-    PORT = MULTIPLAYERPORT  ## CHANGE THE MULTIPLAYERPORT ABOVE ##
-else:
-    PORT = portNumber  # this will read the port number from the server file if playing on the same computer
-
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-server.connect((HOST, PORT))
-print("connected to server")
 
 
 def handleServerMsg(server, serverMsg):
@@ -1084,8 +1057,8 @@ class PygameGame(object):
         if msg != "":
             # print ("sending: ", msg,)
             self.server.send(msg.encode())
-        while serverMsg.qsize() > 0:
-            msg = serverMsg.get(False)
+        while self.serverMsg.qsize() > 0:
+            msg = self.serverMsg.get(False)
             try:
                 msg = msg.split()
                 command = msg[0]
@@ -1249,7 +1222,7 @@ class PygameGame(object):
 
             except:
                 print("failed")
-            serverMsg.task_done()
+            self.serverMsg.task_done()
 
     def redrawAll(self, screen):
         if self.mode == "gameMode":
@@ -1356,13 +1329,42 @@ class PygameGame(object):
         pygame.quit()
 
 
-serverMsg = Queue(100)
-threading.Thread(target=handleServerMsg, args=(server, serverMsg)).start()
+#serverMsg = Queue(100)
+#threading.Thread(target=handleServerMsg, args=(server, serverMsg)).start()
 
+def readFile(path):
+    with open(path, "rt") as f:
+        return f.read()
 
-def main():
+def startGame(HOST, PORT):
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.connect((HOST, PORT))
+    serverMsg = Queue(100)
+    threading.Thread(target=handleServerMsg, args=(server, serverMsg)).start()
+    print("connected to server")
     game = PygameGame()
     game.run(serverMsg, server)
+    return (server, serverMsg)
 
+
+def multiplayerSetup():
+    PORT = int(input("Input PORT as it appeared in the server output: "))
+    HOST = input("Input HOST as it appeared in the server.py output: ")
+    try:
+        startGame(HOST, PORT)
+    except:
+        print("You may have inputted something wrong, please try again")
+        setup()
+
+def main():
+    multiplayer = input("Are you playing on two different computers? [y/n]: ")
+    while multiplayer.strip() != "y" and multiplayer.strip() != "n":
+        multiplayer = input("Please type either 'y' or 'n'")
+    if multiplayer == "y":
+        multiplayerSetup()
+    else:
+        PORT = int(input("Input PORT as it appeared in server output: "))
+        HOST = ""
+        startGame(HOST, PORT)
 
 main()
