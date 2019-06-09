@@ -1354,7 +1354,7 @@ def multiplayerSetup():
         startGame(HOST, PORT)
     except:
         print("You may have inputted something wrong, please try again")
-        setup()
+        multiplayerSetup()
 
 def main():
     multiplayer = input("Are you playing on two different computers? [y/n]: ")
